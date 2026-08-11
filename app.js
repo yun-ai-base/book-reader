@@ -7,17 +7,41 @@
 const CONFIG = {
   owner: 'yun-ai-base',
   repo: 'book-1024',
-  branch: 'main',
-  filePath: '1024.md'
+  branch: 'main'
 };
 const TOKEN_KEY = 'bk1024_token';
 const FONT_KEY = 'bk1024_font';
 const THEME_KEY = 'bk1024_theme';
 const CHAP_KEY = 'bk1024_chapter';
 
-let bookChapters = [];   // [{id, title, content}]
+/* 书籍配置: 每本书的文件名 + 内容标题表 */
+const BOOKS = [
+  {
+    id: 'baijie',
+    file: 'baijie.md',
+    title: '白洁传',
+    chapterTitles: {
+      1: '失身的新婚少妇', 2: '欲望中沉浮一夜哀羞', 3: '流氓与少女',
+      4: '偷情的少妇', 5: '过去的哀伤', 6: '放纵的外出学习',
+      7: '红杏再出墙', 8: '风情万种', 9: '欲海娇妻',
+      10: '一路风流荡少妇', 11: '意乱情迷'
+    }
+  },
+  {
+    id: 'zhangmin',
+    file: 'zhangmin.md',
+    title: '张敏传',
+    chapterTitles: {
+      1: '公关少妇', 2: '上海五日淫', 3: '少妇推销员',
+      4: '淫辱少妇', 5: '放荡岁月', 6: '欲海无边'
+    }
+  }
+];
+
+let currentBook = BOOKS[0];
+let bookChapters = [];   // [{id, title, paras}]
 let currentChapter = 0;
-let bookCache = null;    // 缓存整本书文本
+let allBooks = {};       // {bookId: rawText}
 
 /* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
@@ -36,26 +60,6 @@ function cnNum(n) {
   return c[Math.floor(n / 10)] + '十' + (n % 10 ? c[n % 10] : '');
 }
 
-/* 各章节的内容标题(从原文提取)。
- * 原文件每章标题粘连在上一章正文末尾, 且章节顺序有错乱,
- * 因此用权威映射表替代自动提取, 保证目录标题准确 */
-const CHAPTER_TITLES = {
-  1: '失身的新婚少妇',
-  2: '欲望中沉浮一夜哀羞',
-  3: '流氓与少女',
-  4: '偷情的少妇',
-  5: '过去的哀伤',
-  6: '放纵的外出学习',
-  7: '红杏再出墙',
-  8: '风情万种',
-  9: '欲海娇妻',
-  10: '一路风流荡少妇',
-  11: '意乱情迷',
-  12: '多情不敢难自抑',
-  13: '绿帽风云',
-  14: '白洁之乱伦'
-};
-
 function showLoading(msg) {
   loadingText.textContent = msg || '正在加载…';
   loadingOverlay.classList.remove('hidden');
@@ -67,8 +71,8 @@ function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
 function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
 
 /* ---------- GitHub API ---------- */
-async function fetchBookFile(token) {
-  const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.filePath}?ref=${CONFIG.branch}`;
+async function fetchBookFile(token, fileName) {
+  const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${fileName}?ref=${CONFIG.branch}`;
   const res = await fetch(url, {
     headers: {
       'Accept': 'application/vnd.github.raw+json',
@@ -88,7 +92,7 @@ async function fetchBookFile(token) {
  * 判定标准: Chapter_N 出现在"行尾"(之后到换行符之间无其他内容),
  * 且整段不是目录那行(多个 Chapter 连写在一行)。
  * 这样既识别独立成行的标记, 也识别正文末尾粘连的标记 */
-function parseChapters(raw) {
+function parseChapters(raw, book) {
   const lines = raw.replace(/\r/g, '').split('\n');
   const chaps = [];
   let current = null;
@@ -129,9 +133,9 @@ function parseChapters(raw) {
   // 按章号排序
   chaps.sort((a, b) => a.id - b.id);
 
-  // 应用权威标题表
+  // 应用该书的标题表
   for (const c of chaps) {
-    const t = CHAPTER_TITLES[c.id];
+    const t = book.chapterTitles[c.id];
     if (t) {
       c.title = `第${cnNum(c.id)}章 ${t}`;
     }
@@ -156,7 +160,7 @@ function renderToc() {
 function renderChapter(i) {
   if (!bookChapters[i]) return;
   currentChapter = i;
-  localStorage.setItem(CHAP_KEY, i);
+  localStorage.setItem(CHAP_KEY + '_' + currentBook.id, i);
   const c = bookChapters[i];
   $('chapterTitle').textContent = c.title;
   $('searchResult').classList.add('hidden');
@@ -303,21 +307,53 @@ function toggleTheme() {
   applyTheme();
 }
 
+/* ---------- 书切换 ---------- */
+function setupBookSelect() {
+  const sel = $('bookSelect');
+  sel.innerHTML = '';
+  BOOKS.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = b.title;
+    sel.appendChild(opt);
+  });
+  sel.value = currentBook.id;
+  sel.addEventListener('change', () => {
+    const b = BOOKS.find(x => x.id === sel.value);
+    if (b) loadBook(b);
+  });
+}
+
+function loadBook(book) {
+  currentBook = book;
+  currentChapter = 0;
+  const raw = allBooks[book.id];
+  if (!raw) return;
+  bookChapters = parseChapters(raw, book);
+  if (!bookChapters.length) return;
+  $('bookSelect').value = book.id;
+  renderToc();
+  const key = CHAP_KEY + '_' + book.id;
+  const saved = parseInt(localStorage.getItem(key) || '0', 10);
+  goTo(Math.min(saved, bookChapters.length - 1));
+  closeSidebar();
+}
+
 /* ---------- 解锁流程 ---------- */
 async function unlock(token) {
   try {
     showLoading('正在验证密钥并从私有仓库读取内容…');
-    const raw = await fetchBookFile(token);
+    // 读取所有书
+    for (const b of BOOKS) {
+      const raw = await fetchBookFile(token, b.file);
+      allBooks[b.id] = raw;
+    }
     setToken(token);
-    bookCache = raw;
-    bookChapters = parseChapters(raw);
-    if (!bookChapters.length) throw new Error('未能解析出章节');
     hideLoading();
     overlay.classList.add('hidden');
     reader.classList.remove('hidden');
-    renderToc();
-    const saved = parseInt(localStorage.getItem(CHAP_KEY) || '0', 10);
-    goTo(Math.min(saved, bookChapters.length - 1));
+    setupBookSelect();
+    loadBook(currentBook);
   } catch (err) {
     hideLoading();
     $('authError').textContent = '❌ ' + err.message;
