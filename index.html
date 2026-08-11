@@ -32,7 +32,14 @@
       <button id="logoutBtn" class="btn-mini" title="清除本地 token 退出">退出</button>
     </div>
     <div class="book-switch">
-      <select id="bookSelect" class="book-select" title="切换书籍"></select>
+      <button id="bookSelect" class="book-select" title="切换书籍">
+        <span id="bookSelectLabel">选择书籍</span>
+        <span class="book-select-arrow">▾</span>
+      </button>
+      <div id="bookDropdown" class="book-dropdown hidden">
+        <div class="book-dropdown-title">选择书籍</div>
+        <div id="bookDropdownList" class="book-dropdown-list"></div>
+      </div>
     </div>
     <nav id="tocList" class="toc-list"></nav>
     <div class="sidebar-footer">
