@@ -41,6 +41,12 @@ const BOOKS = [
     file: 'feidu.txt',
     title: '废都',
     chapterTitles: {}
+  },
+  {
+    id: 'feidu-sex',
+    file: 'feidu-sex.txt',
+    title: '废都·情爱片段',
+    chapterTitles: {}
   }
 ];
 
@@ -314,7 +320,7 @@ function toggleTheme() {
 }
 
 /* ---------- 书切换(自定义下拉) ---------- */
-const BOOK_ICONS = { baijie: '📕', zhangmin: '📗', feidu: '📘' };
+const BOOK_ICONS = { baijie: '📕', zhangmin: '📗', feidu: '📘', 'feidu-sex': '❤️' };
 function setupBookSelect() {
   const btn = $('bookSelect');
   const list = $('bookDropdownList');
