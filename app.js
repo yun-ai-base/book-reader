@@ -36,6 +36,26 @@ function cnNum(n) {
   return c[Math.floor(n / 10)] + '十' + (n % 10 ? c[n % 10] : '');
 }
 
+/* 各章节的内容标题(从原文提取)。
+ * 原文件每章标题粘连在上一章正文末尾, 且章节顺序有错乱,
+ * 因此用权威映射表替代自动提取, 保证目录标题准确 */
+const CHAPTER_TITLES = {
+  1: '失身的新婚少妇',
+  2: '欲望中沉浮一夜哀羞',
+  3: '流氓与少女',
+  4: '偷情的少妇',
+  5: '过去的哀伤',
+  6: '放纵的外出学习',
+  7: '红杏再出墙',
+  8: '风情万种',
+  9: '欲海娇妻',
+  10: '一路风流荡少妇',
+  11: '意乱情迷',
+  12: '多情不敢难自抑',
+  13: '绿帽风云',
+  14: '白洁之乱伦'
+};
+
 function showLoading(msg) {
   loadingText.textContent = msg || '正在加载…';
   loadingOverlay.classList.remove('hidden');
@@ -106,22 +126,17 @@ function parseChapters(raw) {
   }
   if (current) chaps.push(current);
 
-  // 提取真实章节标题: 只在章首段落(前 2 段)找 "第X章" + 短标题(≤6字)
-  // 避免正文里出现"第X章"字样被误当标题
-  const cn = ['零','一','二','三','四','五','六','七','八','九','十'];
-  const titleMatch = s => s.match(/^第([一二三四五六七八九十]+)章\s*([一-龥]{1,8})/);
+  // 按章号排序
+  chaps.sort((a, b) => a.id - b.id);
+
+  // 应用权威标题表
   for (const c of chaps) {
-    const head = c.paras.slice(0, 2).find(p => titleMatch(p));
-    if (head) {
-      const m = titleMatch(head);
-      const num = m[1] === '一' ? 1 : cn.indexOf(m[1]);
-      c.title = `第${m[1]}章 ${m[2]}`;
-      c.paras = c.paras.filter(p => p !== head);
+    const t = CHAPTER_TITLES[c.id];
+    if (t) {
+      c.title = `第${cnNum(c.id)}章 ${t}`;
     }
   }
 
-  // 按章号排序
-  chaps.sort((a, b) => a.id - b.id);
   return chaps.map(c => ({ id: c.id, title: c.title, paras: c.paras }));
 }
 
