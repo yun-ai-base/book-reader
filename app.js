@@ -35,6 +35,12 @@ const BOOKS = [
       1: '公关少妇', 2: '上海五日淫', 3: '少妇推销员',
       4: '淫辱少妇', 5: '放荡岁月', 6: '欲海无边'
     }
+  },
+  {
+    id: 'feidu',
+    file: 'feidu.txt',
+    title: '废都',
+    chapterTitles: {}
   }
 ];
 
@@ -308,7 +314,7 @@ function toggleTheme() {
 }
 
 /* ---------- 书切换(自定义下拉) ---------- */
-const BOOK_ICONS = { baijie: '📕', zhangmin: '📗' };
+const BOOK_ICONS = { baijie: '📕', zhangmin: '📗', feidu: '📘' };
 function setupBookSelect() {
   const btn = $('bookSelect');
   const list = $('bookDropdownList');
