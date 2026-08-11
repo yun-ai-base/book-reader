@@ -27,6 +27,15 @@ const loadingOverlay = $('loadingOverlay'), loadingText = $('loadingText');
 /* ---------- 工具 ---------- */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+/* 阿拉伯数字 → 中文数字 (1→一, 11→十一, 20→二十) */
+function cnNum(n) {
+  const c = ['零','一','二','三','四','五','六','七','八','九'];
+  if (n <= 9) return c[n];
+  if (n === 10) return '十';
+  if (n < 20) return '十' + c[n - 10];
+  return c[Math.floor(n / 10)] + '十' + (n % 10 ? c[n % 10] : '');
+}
+
 function showLoading(msg) {
   loadingText.textContent = msg || '正在加载…';
   loadingOverlay.classList.remove('hidden');
@@ -73,7 +82,8 @@ function parseChapters(raw) {
     const m = t.match(/^(Chapter_\d+)/);
     if (m) {
       if (current) chaps.push(current);
-      current = { id: parseInt(m[1].replace('Chapter_', ''), 10), title: `第 ${m[1].replace('Chapter_', '')} 章`, paras: [] };
+      const id = parseInt(m[1].replace('Chapter_', ''), 10);
+      current = { id, title: `第${cnNum(id)}章`, paras: [] };
       // 行首是 Chapter_N 但行尾还有内容(粘连): 剩余部分算进本章
       const rest = t.slice(m[1].length).trim();
       if (rest) current.paras.push(rest);
@@ -88,7 +98,7 @@ function parseChapters(raw) {
         chaps.push(current);
       }
       const id = parseInt(tail[2].replace('Chapter_', ''), 10);
-      current = { id, title: `第 ${id} 章`, paras: [] };
+      current = { id, title: `第${cnNum(id)}章`, paras: [] };
       continue;
     }
 
@@ -175,10 +185,32 @@ function updateProgress() {
 
 /* ---------- 阅读操作 ---------- */
 function goTo(i) {
-  if (i >= 0 && i < bookChapters.length) renderChapter(i);
+  if (i >= 0 && i < bookChapters.length) {
+    renderChapter(i);
+    closeSidebar();   // 移动端点章后收起抽屉
+  }
 }
 function nextChapter() { goTo(currentChapter + 1); }
 function prevChapter() { goTo(currentChapter - 1); }
+
+/* ---------- 移动端侧边栏抽屉 ---------- */
+function openSidebar() {
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebarBackdrop').classList.add('show');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+function setupSidebar() {
+  const menuBtn = $('menuBtn');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  menuBtn.addEventListener('click', () => {
+    const open = document.querySelector('.sidebar').classList.contains('open');
+    open ? closeSidebar() : openSidebar();
+  });
+  backdrop.addEventListener('click', closeSidebar);
+}
 
 /* ---------- 全文搜索 ---------- */
 let searchTimer = null;
@@ -287,6 +319,7 @@ function init() {
   $('nextChapter').addEventListener('click', nextChapter);
   $('prevChapter').addEventListener('click', prevChapter);
   setupSearch();
+  setupSidebar();
 
   $('authBtn').addEventListener('click', () => {
     const t = $('tokenInput').value.trim();
