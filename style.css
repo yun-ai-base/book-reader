@@ -148,6 +148,9 @@ body {
 
 /* ===== 移动端适配 =====
  * <768px: 侧边栏变抽屉(默认隐藏, 点☰滑出), 正文全宽, 加半透明遮罩 */
+/* 桌面端默认隐藏汉堡按钮(须在媒体查询之前, 否则会被覆盖) */
+.menu-btn { display: none; }
+
 @media (max-width: 767px) {
   .menu-btn { display: inline-block; }
 
@@ -170,9 +173,6 @@ body {
   .chapter-title { font-size: 14px; }
   .btn-mini { padding: 4px 8px; font-size: 12px; }
 }
-
-/* 桌面端隐藏汉堡按钮 */
-.menu-btn { display: none; }
 
 @media (min-width: 768px) {
   .sidebar-backdrop { display: none !important; }
