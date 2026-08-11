@@ -307,21 +307,44 @@ function toggleTheme() {
   applyTheme();
 }
 
-/* ---------- 书切换 ---------- */
+/* ---------- 书切换(自定义下拉) ---------- */
+const BOOK_ICONS = { baijie: '📕', zhangmin: '📗' };
 function setupBookSelect() {
-  const sel = $('bookSelect');
-  sel.innerHTML = '';
+  const btn = $('bookSelect');
+  const list = $('bookDropdownList');
+  const label = $('bookSelectLabel');
+
+  // 渲染选项
+  list.innerHTML = '';
   BOOKS.forEach(b => {
-    const opt = document.createElement('option');
-    opt.value = b.id;
-    opt.textContent = b.title;
-    sel.appendChild(opt);
+    const item = document.createElement('button');
+    item.className = 'book-dropdown-item';
+    item.dataset.id = b.id;
+    item.innerHTML = `<span class="book-icon">${BOOK_ICONS[b.id] || '📖'}</span><span>${b.title}</span>`;
+    item.addEventListener('click', () => {
+      closeBookDropdown();
+      if (b.id !== currentBook.id) loadBook(b);
+    });
+    list.appendChild(item);
   });
-  sel.value = currentBook.id;
-  sel.addEventListener('change', () => {
-    const b = BOOKS.find(x => x.id === sel.value);
-    if (b) loadBook(b);
+
+  // 开关
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = $('bookDropdown').classList.contains('hidden');
+    open ? openBookDropdown() : closeBookDropdown();
   });
+  // 点击外部关闭
+  document.addEventListener('click', closeBookDropdown);
+}
+
+function openBookDropdown() {
+  $('bookSelect').classList.add('open');
+  $('bookDropdown').classList.remove('hidden');
+}
+function closeBookDropdown() {
+  $('bookSelect').classList.remove('open');
+  $('bookDropdown').classList.add('hidden');
 }
 
 function loadBook(book) {
@@ -331,12 +354,17 @@ function loadBook(book) {
   if (!raw) return;
   bookChapters = parseChapters(raw, book);
   if (!bookChapters.length) return;
-  $('bookSelect').value = book.id;
+  $('bookSelectLabel').textContent = `${BOOK_ICONS[book.id] || '📖'} ${book.title}`;
+  // 高亮当前项
+  document.querySelectorAll('.book-dropdown-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === book.id);
+  });
   renderToc();
   const key = CHAP_KEY + '_' + book.id;
   const saved = parseInt(localStorage.getItem(key) || '0', 10);
   goTo(Math.min(saved, bookChapters.length - 1));
   closeSidebar();
+  closeBookDropdown();
 }
 
 /* ---------- 解锁流程 ---------- */
