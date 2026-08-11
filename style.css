@@ -91,16 +91,20 @@ body {
 .progress-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
 /* ===== 正文区 ===== */
-.content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.content {
+  flex: 1; display: flex; flex-direction: column;
+  overflow-y: auto;          /* 滚动发生在整个内容区 → 滚动条在屏幕右缘 */
+}
 .toolbar {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 26px; border-bottom: 1px solid var(--border);
   background: var(--card);
+  position: sticky; top: 0; z-index: 10;
 }
 .chapter-title { flex: 1; text-align: center; font-size: 16px; font-weight: 600; }
 .toolbar-right { display: flex; gap: 6px; }
 .chapter-body {
-  flex: 1; overflow-y: auto; padding: 40px 60px 80px;
+  padding: 40px 60px 80px;
   max-width: 860px; margin: 0 auto; width: 100%;
   font-size: 17px; line-height: 2; text-align: justify;
 }
@@ -142,9 +146,34 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ===== 响应式 ===== */
-@media (max-width: 760px) {
-  .sidebar { width: 200px; }
+/* ===== 移动端适配 =====
+ * <768px: 侧边栏变抽屉(默认隐藏, 点☰滑出), 正文全宽, 加半透明遮罩 */
+@media (max-width: 767px) {
+  .menu-btn { display: inline-block; }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    width: 78vw; max-width: 300px;
+    transform: translateX(-100%);
+    transition: transform .28s ease;
+    box-shadow: 2px 0 20px rgba(0,0,0,.15);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 99;
+    background: rgba(0,0,0,.45);
+  }
+  .sidebar-backdrop.show { display: block; }
+
   .chapter-body { padding: 24px 22px 60px; font-size: 16px; }
-  .toolbar { padding: 10px 14px; }
+  .toolbar { padding: 10px 12px; gap: 8px; }
+  .chapter-title { font-size: 14px; }
+  .btn-mini { padding: 4px 8px; font-size: 12px; }
+}
+
+/* 桌面端隐藏汉堡按钮 */
+.menu-btn { display: none; }
+
+@media (min-width: 768px) {
+  .sidebar-backdrop { display: none !important; }
 }
