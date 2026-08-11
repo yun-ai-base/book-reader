@@ -55,8 +55,10 @@ async function fetchBookFile(token) {
 }
 
 /* ---------- 章节解析 ----------
- * 章节格式: 独立行 "Chapter_N" 为分界, 标题取下一个含"第X章"的行
- * 正文段落按空行/换行拆分 */
+ * 章节标记 "Chapter_N" 可能独立成行, 也可能粘连在上一章正文末尾
+ * 判定标准: Chapter_N 出现在"行尾"(之后到换行符之间无其他内容),
+ * 且整段不是目录那行(多个 Chapter 连写在一行)。
+ * 这样既识别独立成行的标记, 也识别正文末尾粘连的标记 */
 function parseChapters(raw) {
   const lines = raw.replace(/\r/g, '').split('\n');
   const chaps = [];
@@ -64,25 +66,47 @@ function parseChapters(raw) {
 
   for (let line of lines) {
     const t = line.trim();
-    const m = t.match(/^Chapter_(\d+)$/);
+    // 目录行(同一行连写多个 Chapter_): 跳过
+    if (/(?:^|\s)Chapter_\d+(?:\s+Chapter_\d+)+\s*$/.test(t)) continue;
+
+    // 独立成行 或 行首就是 Chapter_N → 作为章节标记
+    const m = t.match(/^(Chapter_\d+)/);
     if (m) {
       if (current) chaps.push(current);
-      current = { id: parseInt(m[1], 10), title: `第 ${m[1]} 章`, paras: [] };
+      current = { id: parseInt(m[1].replace('Chapter_', ''), 10), title: `第 ${m[1].replace('Chapter_', '')} 章`, paras: [] };
+      // 行首是 Chapter_N 但行尾还有内容(粘连): 剩余部分算进本章
+      const rest = t.slice(m[1].length).trim();
+      if (rest) current.paras.push(rest);
       continue;
     }
+
+    // 行尾粘连的 Chapter_N(正文... Chapter_6): 把标记拆出, 正文归入上一章, 开启新章
+    const tail = t.match(/^(.*?)(Chapter_\d+)\s*$/);
+    if (tail && tail[1].trim()) {
+      if (current) {
+        current.paras.push(tail[1].trim());
+        chaps.push(current);
+      }
+      const id = parseInt(tail[2].replace('Chapter_', ''), 10);
+      current = { id, title: `第 ${id} 章`, paras: [] };
+      continue;
+    }
+
     if (current && t) current.paras.push(t);
   }
   if (current) chaps.push(current);
 
-  // 提取真实章节标题: 找到含"第X章"的段落作为标题
+  // 提取真实章节标题: 只在章首段落(前 2 段)找 "第X章" + 短标题(≤6字)
+  // 避免正文里出现"第X章"字样被误当标题
   const cn = ['零','一','二','三','四','五','六','七','八','九','十'];
-  const titleMatch = s => s.match(/^第([一二三四五六七八九十]+)章(.{0,12})/);
+  const titleMatch = s => s.match(/^第([一二三四五六七八九十]+)章\s*([一-龥]{1,8})/);
   for (const c of chaps) {
-    const hit = c.paras.find(p => titleMatch(p));
-    if (hit) {
-      const m = titleMatch(hit);
-      c.title = `第${m[1]}章 ${m[2]}`.trim();
-      c.paras = c.paras.filter(p => p !== hit);
+    const head = c.paras.slice(0, 2).find(p => titleMatch(p));
+    if (head) {
+      const m = titleMatch(head);
+      const num = m[1] === '一' ? 1 : cn.indexOf(m[1]);
+      c.title = `第${m[1]}章 ${m[2]}`;
+      c.paras = c.paras.filter(p => p !== head);
     }
   }
 
