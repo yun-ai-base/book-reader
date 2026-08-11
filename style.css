@@ -234,9 +234,36 @@ body {
   .sidebar-backdrop.show { display: block; }
 
   .chapter-body { padding: 24px 22px 60px; font-size: 16px; }
-  .toolbar { padding: 10px 12px; gap: 8px; }
-  .chapter-title { font-size: 14px; }
-  .btn-mini { padding: 4px 8px; font-size: 12px; }
+
+  /* 移动端工具栏两行布局:
+   * 第一行: [☰] [◀上章] [章节标题] [下章▶]
+   * 第二行: [A-] [A+] [🌙] (居中) */
+  .toolbar {
+    padding: 8px 12px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .chapter-title {
+    font-size: 14px;
+    min-width: 0;              /* 允许收缩 */
+    flex: 1 1 auto;            /* 撑满中间 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;   /* 超长省略 */
+  }
+  .btn-mini { padding: 5px 9px; font-size: 12px; }
+
+  /* 字体/主题按钮组换到第二行居中 */
+  .toolbar-right {
+    flex: 1 1 100%;            /* 独占一行 */
+    order: 5;                  /* 排到最后 */
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+    margin-top: 2px;
+  }
 }
 
 @media (min-width: 768px) {
