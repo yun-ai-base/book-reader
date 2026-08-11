@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1024 · 私人阅读</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== 密钥验证面板 ===== -->
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <h1>🔐 私人书库</h1>
+    <p class="auth-sub">本页面内容存放于私有仓库,<br>需验证后解锁阅读。</p>
+    <input type="password" id="tokenInput" placeholder="粘贴 GitHub Personal Access Token" autocomplete="off">
+    <button id="authBtn" class="btn-primary">解锁</button>
+    <p id="authError" class="auth-error"></p>
+    <div class="auth-tip">
+      提示:token 仅保存在你的浏览器本地(localStorage),<br>
+      不发送到任何服务器,可随时清缓存退出。
+    </div>
+  </div>
+</div>
+
+<!-- ===== 阅读界面 ===== -->
+<div id="reader" class="reader hidden">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>📖 目录</h2>
+      <button id="logoutBtn" class="btn-mini" title="清除本地 token 退出">退出</button>
+    </div>
+    <nav id="tocList" class="toc-list"></nav>
+    <div class="sidebar-footer">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 全文搜索…">
+      </div>
+      <p class="progress-hint" id="progressHint"></p>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="toolbar">
+      <button id="prevChapter" class="btn-mini">◀ 上章</button>
+      <span id="chapterTitle" class="chapter-title"></span>
+      <button id="nextChapter" class="btn-mini">下章 ▶</button>
+      <span class="toolbar-right">
+        <button id="fontMinus" class="btn-mini">A-</button>
+        <button id="fontPlus" class="btn-mini">A+</button>
+        <button id="themeToggle" class="btn-mini">🌙</button>
+      </span>
+    </div>
+    <article id="chapterBody" class="chapter-body"></article>
+    <div id="searchResult" class="search-result hidden"></div>
+    <footer class="footer">— 本页已解锁 · 内容来自你的私有仓库 —</footer>
+  </main>
+</div>
+
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <p id="loadingText">正在加载…</p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
